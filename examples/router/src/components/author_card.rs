@@ -1,8 +1,11 @@
-use crate::{content::Author, generator::Generated, Route};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Properties)]
+use crate::content::Author;
+use crate::generator::Generated;
+use crate::Route;
+
+#[derive(Clone, Debug, PartialEq, Eq, Properties)]
 pub struct Props {
     pub seed: u64,
 }
@@ -20,7 +23,7 @@ impl Component for AuthorCard {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         self.author = Author::generate_from_seed(ctx.props().seed);
         true
     }
@@ -33,7 +36,7 @@ impl Component for AuthorCard {
                     <div class="media">
                         <div class="media-left">
                             <figure class="image is-128x128">
-                                <img src={author.image_url.clone()} />
+                                <img alt="Author's profile picture" src={author.image_url.clone()} />
                             </figure>
                         </div>
                         <div class="media-content">
@@ -46,7 +49,7 @@ impl Component for AuthorCard {
                     </div>
                 </div>
                 <footer class="card-footer">
-                    <Link<Route> classes={classes!("card-footer-item")} route={Route::Author { id: author.seed }}>
+                    <Link<Route> classes={classes!("card-footer-item")} to={Route::Author { id: author.seed }}>
                         { "Profile" }
                     </Link<Route>>
                 </footer>

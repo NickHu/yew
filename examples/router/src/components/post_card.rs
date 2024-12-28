@@ -1,8 +1,11 @@
-use crate::{content::PostMeta, generator::Generated, Route};
 use yew::prelude::*;
 use yew_router::components::Link;
 
-#[derive(Clone, Debug, PartialEq, Properties)]
+use crate::content::PostMeta;
+use crate::generator::Generated;
+use crate::Route;
+
+#[derive(Clone, Debug, PartialEq, Eq, Properties)]
 pub struct Props {
     pub seed: u64,
 }
@@ -19,7 +22,8 @@ impl Component for PostCard {
             post: PostMeta::generate_from_seed(ctx.props().seed),
         }
     }
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         self.post = PostMeta::generate_from_seed(ctx.props().seed);
         true
     }
@@ -30,14 +34,14 @@ impl Component for PostCard {
             <div class="card">
                 <div class="card-image">
                     <figure class="image is-2by1">
-                        <img src={post.image_url.clone()} loading="lazy" />
+                        <img alt="This post's image" src={post.image_url.clone()} loading="lazy" />
                     </figure>
                 </div>
                 <div class="card-content">
-                    <Link<Route> classes={classes!("title", "is-block")} route={Route::Post { id: post.seed }}>
+                    <Link<Route> classes={classes!("title", "is-block")} to={Route::Post { id: post.seed }}>
                         { &post.title }
                     </Link<Route>>
-                    <Link<Route> classes={classes!("subtitle", "is-block")} route={Route::Author { id: post.author.seed }}>
+                    <Link<Route> classes={classes!("subtitle", "is-block")} to={Route::Author { id: post.author.seed }}>
                         { &post.author.name }
                     </Link<Route>>
                 </div>

@@ -46,12 +46,12 @@ fn compile_pass() {
         || <::std::string::String as ::std::convert::From<&::std::primitive::str>>::from("test");
     let mut extra_tags_iter = ::std::iter::IntoIterator::into_iter(::std::vec!["a", "b"]);
 
-    let cow_none: ::std::option::Option<::std::borrow::Cow<'static, ::std::primitive::str>> =
-        ::std::option::Option::None;
+    let attr_val_none: ::std::option::Option<::yew::virtual_dom::AttrValue> = ::std::option::Option::None;
 
-    ::yew::html! {
+    _ = ::yew::html! {
         <div>
             <div data-key="abc"></div>
+            <div ref={&parent_ref}></div>
             <div ref={parent_ref} class="parent">
                 <span class="child" value="anything"></span>
                 <label for="first-name">{"First Name"}</label>
@@ -92,19 +92,18 @@ fn compile_pass() {
             </@>
 
             <@{
-                let tag = dyn_tag();
-                if tag == "test" {
+                if dyn_tag() == "test" {
                     "div"
                 } else {
                     "a"
                 }
             }/>
 
-            <a href={::std::option::Option::Some(::std::borrow::Cow::Borrowed("http://google.com"))} media={::std::clone::Clone::clone(&cow_none)} />
-            <track kind={::std::option::Option::Some(::std::borrow::Cow::Borrowed("subtitles"))} src={::std::clone::Clone::clone(&cow_none)} />
-            <track kind={::std::option::Option::Some(::std::borrow::Cow::Borrowed("5"))} mixed="works" />
-            <input value={::std::option::Option::Some(::std::borrow::Cow::Borrowed("value"))}
-                onblur={::std::option::Option::Some(<::yew::Callback<::yew::events::FocusEvent> as ::std::convert::From<_>>::from(|_| ()))}
+            <a href={::std::option::Option::Some(::yew::virtual_dom::AttrValue::Static("http://google.com"))} media={::std::clone::Clone::clone(&attr_val_none)} />
+            <track kind={::std::option::Option::Some(::yew::virtual_dom::AttrValue::Static("subtitles"))} src={::std::clone::Clone::clone(&attr_val_none)} />
+            <track kind={::std::option::Option::Some(::yew::virtual_dom::AttrValue::Static("5"))} mixed="works" />
+            <input value={::std::option::Option::Some(::yew::virtual_dom::AttrValue::Static("value"))}
+                onblur={::std::option::Option::Some(<::yew::Callback<::yew::FocusEvent> as ::std::convert::From<_>>::from(|_| ()))}
             />
         </div>
     };
@@ -113,11 +112,17 @@ fn compile_pass() {
         ::yew::html! { <span>{ "Hello" }</span> },
         ::yew::html! { <span>{ "World" }</span> },
     ];
-    ::yew::html! { <div>{children}</div> };
+    _ = ::yew::html! { <div>{children}</div> };
 
     // handle misleading angle brackets
-    ::yew::html! { <div data-val={<::std::string::String as ::std::default::Default>::default()}></div> };
-    ::yew::html! { <div><a data-val={<::std::string::String as ::std::default::Default>::default()} /></div> };
+    _ = ::yew::html! { <div data-val={<::std::string::String as ::std::default::Default>::default()}></div> };
+    _ = ::yew::html! { <div><a data-val={<::std::string::String as ::std::default::Default>::default()} /></div> };
+
+    // test for https://github.com/yewstack/yew/issues/2810
+    _ = ::yew::html! {  <div data-type="date" data-as="calender" /> };
+
+    let option_vnode = ::std::option::Option::Some(::yew::html! {});
+    _ = ::yew::html! { <div>{option_vnode}</div> };
 }
 
 fn main() {}

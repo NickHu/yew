@@ -1,5 +1,7 @@
-use crate::{content, generator::Generated};
 use yew::prelude::*;
+
+use crate::content;
+use crate::generator::Generated;
 
 #[derive(Clone, Debug, Eq, PartialEq, Properties)]
 pub struct Props {
@@ -19,7 +21,7 @@ impl Component for Author {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
         self.author = content::Author::generate_from_seed(ctx.props().seed);
         true
     }
@@ -46,7 +48,7 @@ impl Component for Author {
                         </div>
                         <div class="tile is-parent">
                             <figure class="tile is-child image is-square">
-                                <img src={author.image_url.clone()} />
+                                <img alt="The author's profile picture." src={author.image_url.clone()} />
                             </figure>
                         </div>
                         <div class="tile is-parent">

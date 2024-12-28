@@ -4,9 +4,9 @@
 //! # Usage
 //!
 //! ```rust
-//! # use yew::prelude::*;
-//! # use yew::functional::*;
-//! # use yew_router::prelude::*;
+//! use yew::functional::*;
+//! use yew::prelude::*;
+//! use yew_router::prelude::*;
 //!
 //! #[derive(Debug, Clone, Copy, PartialEq, Routable)]
 //! enum Route {
@@ -19,22 +19,33 @@
 //!     NotFound,
 //! }
 //!
-//! # #[function_component(Main)]
-//! # fn app() -> Html {
-//! html! {
-//!     <Router<Route> render={Router::render(switch)} />
-//! }
-//! # }
+//! #[function_component(Secure)]
+//! fn secure() -> Html {
+//!     let navigator = use_navigator().unwrap();
 //!
-//! fn switch(routes: &Route) -> Html {
-//!     let onclick_callback = Callback::from(|_| yew_router::push_route(Route::Home));
+//!     let onclick_callback = Callback::from(move |_| navigator.push(&Route::Home));
+//!     html! {
+//!         <div>
+//!             <h1>{ "Secure" }</h1>
+//!             <button onclick={onclick_callback}>{ "Go Home" }</button>
+//!         </div>
+//!     }
+//! }
+//!
+//! #[function_component(Main)]
+//! fn app() -> Html {
+//!     html! {
+//!         <BrowserRouter>
+//!             <Switch<Route> render={switch} />
+//!         </BrowserRouter>
+//!     }
+//! }
+//!
+//! fn switch(routes: Route) -> Html {
 //!     match routes {
 //!         Route::Home => html! { <h1>{ "Home" }</h1> },
 //!         Route::Secure => html! {
-//!             <div>
-//!                 <h1>{ "Secure" }</h1>
-//!                 <button onclick={onclick_callback}>{ "Go Home" }</button>
-//!             </div>
+//!             <Secure />
 //!         },
 //!         Route::NotFound => html! { <h1>{ "404" }</h1> },
 //!     }
@@ -43,15 +54,14 @@
 //!
 //! # Internals
 //!
-//! The router keeps its own internal state which is used to store the current route and its associated data.
-//! This allows the [Router] to be operated using the [service] with an API that
-//! isn't cumbersome to use.
+//! The router registers itself as a context provider and makes location information and navigator
+//! available via [`hooks`] or [`RouterScopeExt`](scope_ext::RouterScopeExt).
 //!
 //! # State
 //!
-//! The browser history API allows users to state associated with the route. This crate does
-//! not expose or make use of it. It is instead recommended that a state management library like
-//! [yewdux](https://github.com/intendednull/yewdux) be used.
+//! The [`Location`](gloo::history::Location) API has a way to access / store state associated with
+//! session history. Please consult [`location.state()`](crate::history::Location::state) for
+//! detailed usage.
 
 extern crate self as yew_router;
 
@@ -59,23 +69,38 @@ extern crate self as yew_router;
 #[path = "macro_helpers.rs"]
 pub mod __macro;
 pub mod components;
+pub mod hooks;
+pub mod navigator;
 mod routable;
 pub mod router;
-mod service;
-pub(crate) mod utils;
+pub mod scope_ext;
+pub mod switch;
+pub mod utils;
 
-pub use service::*;
+pub use routable::{AnyRoute, Routable};
+pub use router::{BrowserRouter, HashRouter, Router};
+pub use switch::Switch;
 
-pub use routable::Routable;
-pub use router::{RenderFn, Router};
+pub mod history {
+    //! A module that provides universal session history and location information.
+
+    pub use gloo::history::{
+        AnyHistory, BrowserHistory, HashHistory, History, HistoryError, HistoryResult, Location,
+        MemoryHistory,
+    };
+}
 
 pub mod prelude {
     //! Prelude module to be imported when working with `yew-router`.
     //!
     //! This module re-exports the frequently used types from the crate.
 
-    pub use crate::components::Link;
+    pub use crate::components::{Link, Redirect};
+    pub use crate::history::Location;
+    pub use crate::hooks::*;
+    pub use crate::navigator::{NavigationError, NavigationResult, Navigator};
+    pub use crate::scope_ext::{LocationHandle, NavigatorHandle, RouterScopeExt};
     #[doc(no_inline)]
     pub use crate::Routable;
-    pub use crate::Router;
+    pub use crate::{BrowserRouter, HashRouter, Router, Switch};
 }

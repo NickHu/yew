@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+
 use wasm_bindgen::JsCast;
 
 pub(crate) fn strip_slash_suffix(path: &str) -> &str {
@@ -7,11 +8,11 @@ pub(crate) fn strip_slash_suffix(path: &str) -> &str {
 
 static BASE_URL_LOADED: std::sync::Once = std::sync::Once::new();
 thread_local! {
-    static BASE_URL: RefCell<Option<String>> = RefCell::new(None);
+    static BASE_URL: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
-// This exists so we can cache the base url. It costs us a `to_string` call instead of a DOM API call.
-// Considering base urls are generally short, it *should* be less expensive.
+// This exists so we can cache the base url. It costs us a `to_string` call instead of a DOM API
+// call. Considering base urls are generally short, it *should* be less expensive.
 pub fn base_url() -> Option<String> {
     BASE_URL_LOADED.call_once(|| {
         BASE_URL.with(|val| {
@@ -22,7 +23,7 @@ pub fn base_url() -> Option<String> {
 }
 
 pub fn fetch_base_url() -> Option<String> {
-    match yew::utils::document().query_selector("base[href]") {
+    match gloo::utils::document().query_selector("base[href]") {
         Ok(Some(base)) => {
             let base = base.unchecked_into::<web_sys::HtmlBaseElement>().href();
 
@@ -41,13 +42,34 @@ pub fn fetch_base_url() -> Option<String> {
     }
 }
 
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+pub fn compose_path(pathname: &str, query: &str) -> Option<String> {
+    gloo::utils::window()
+        .location()
+        .href()
+        .ok()
+        .and_then(|base| web_sys::Url::new_with_base(pathname, &base).ok())
+        .map(|url| {
+            url.set_search(query);
+            format!("{}{}", url.pathname(), url.search())
+        })
+}
+
+#[cfg(any(not(target_arch = "wasm32"), target_os = "wasi"))]
+pub fn compose_path(pathname: &str, query: &str) -> Option<String> {
+    let query = query.trim();
+
+    if !query.is_empty() {
+        Some(format!("{pathname}?{query}"))
+    } else {
+        Some(pathname.to_owned())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use serde::Serialize;
-    use std::collections::HashMap;
+    use gloo::utils::document;
     use wasm_bindgen_test::wasm_bindgen_test as test;
-    use yew::utils::*;
-    use yew_router::parse_query;
     use yew_router::prelude::*;
     use yew_router::utils::*;
 
@@ -82,33 +104,16 @@ mod tests {
         assert_eq!(fetch_base_url(), Some("/base".to_string()));
     }
 
-    #[derive(Serialize, Clone)]
-    struct QueryParams {
-        foo: String,
-        bar: u32,
-    }
-
     #[test]
-    fn test_get_query_params() {
+    fn test_compose_path() {
+        assert_eq!(compose_path("/home", ""), Some("/home".to_string()));
         assert_eq!(
-            parse_query::<HashMap<String, String>>().unwrap(),
-            HashMap::new()
+            compose_path("/path/to", "foo=bar"),
+            Some("/path/to?foo=bar".to_string())
         );
-
-        let query = QueryParams {
-            foo: "test".to_string(),
-            bar: 69,
-        };
-
-        yew_router::push_route_with_query(Routes::Home, query).unwrap();
-
-        let params: HashMap<String, String> = parse_query().unwrap();
-
-        assert_eq!(params, {
-            let mut map = HashMap::new();
-            map.insert("foo".to_string(), "test".to_string());
-            map.insert("bar".to_string(), "69".to_string());
-            map
-        });
+        assert_eq!(
+            compose_path("/events", "from=2019&to=2021"),
+            Some("/events?from=2019&to=2021".to_string())
+        );
     }
 }

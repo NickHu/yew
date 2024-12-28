@@ -5,13 +5,15 @@ mod components;
 mod content;
 mod generator;
 mod pages;
-use pages::{
-    author::Author, author_list::AuthorList, home::Home, page_not_found::PageNotFound, post::Post,
-    post_list::PostList,
-};
+use pages::author::Author;
+use pages::author_list::AuthorList;
+use pages::home::Home;
+use pages::page_not_found::PageNotFound;
+use pages::post::Post;
+use pages::post_list::PostList;
 use yew::html::Scope;
 
-#[derive(Routable, PartialEq, Clone, Debug)]
+#[derive(Routable, PartialEq, Eq, Clone, Debug)]
 pub enum Route {
     #[at("/posts/:id")]
     Post { id: u64 },
@@ -32,10 +34,10 @@ pub enum Msg {
     ToggleNavbar,
 }
 
-pub struct Model {
+pub struct App {
     navbar_active: bool,
 }
-impl Component for Model {
+impl Component for App {
     type Message = Msg;
     type Properties = ();
 
@@ -56,11 +58,11 @@ impl Component for Model {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <>
+            <BrowserRouter>
                 { self.view_nav(ctx.link()) }
 
                 <main>
-                    <Router<Route> render={Router::render(switch)} />
+                    <Switch<Route> render={switch} />
                 </main>
                 <footer class="footer">
                     <div class="content has-text-centered">
@@ -72,50 +74,47 @@ impl Component for Model {
                         <a href="https://unsplash.com">{ "Unsplash" }</a>
                     </div>
                 </footer>
-            </>
+            </BrowserRouter>
         }
     }
 }
-impl Model {
+impl App {
     fn view_nav(&self, link: &Scope<Self>) -> Html {
         let Self { navbar_active, .. } = *self;
 
-        let active_class = if navbar_active { "is-active" } else { "" };
+        let active_class = if !navbar_active { "is-active" } else { "" };
 
         html! {
             <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
                 <div class="navbar-brand">
                     <h1 class="navbar-item is-size-3">{ "Yew Blog" }</h1>
 
-                    <a role="button"
-                        class={classes!("navbar-burger", "burger", active_class)}
+                    <button class={classes!("navbar-burger", "burger", active_class)}
                         aria-label="menu" aria-expanded="false"
                         onclick={link.callback(|_| Msg::ToggleNavbar)}
                     >
                         <span aria-hidden="true"></span>
                         <span aria-hidden="true"></span>
                         <span aria-hidden="true"></span>
-                    </a>
+                    </button>
                 </div>
                 <div class={classes!("navbar-menu", active_class)}>
                     <div class="navbar-start">
-                        <Link<Route> classes={classes!("navbar-item")} route={Route::Home}>
+                        <Link<Route> classes={classes!("navbar-item")} to={Route::Home}>
                             { "Home" }
                         </Link<Route>>
-                        <Link<Route> classes={classes!("navbar-item")} route={Route::Posts}>
+                        <Link<Route> classes={classes!("navbar-item")} to={Route::Posts}>
                             { "Posts" }
                         </Link<Route>>
 
                         <div class="navbar-item has-dropdown is-hoverable">
-                            <a class="navbar-link">
+                            <div class="navbar-link">
                                 { "More" }
-                            </a>
+                            </div>
                             <div class="navbar-dropdown">
-                                <a class="navbar-item">
-                                    <Link<Route> classes={classes!("navbar-item")} route={Route::Authors}>
-                                        { "Meet the authors" }
-                                    </Link<Route>>
-                                </a>
+                                <Link<Route> classes={classes!("navbar-item")} to={Route::Authors}>
+                                    { "Meet the authors" }
+                                </Link<Route>>
                             </div>
                         </div>
                     </div>
@@ -125,16 +124,16 @@ impl Model {
     }
 }
 
-fn switch(routes: &Route) -> Html {
+fn switch(routes: Route) -> Html {
     match routes {
         Route::Post { id } => {
-            html! { <Post seed={*id} /> }
+            html! { <Post seed={id} /> }
         }
         Route::Posts => {
             html! { <PostList /> }
         }
         Route::Author { id } => {
-            html! { <Author seed={*id} /> }
+            html! { <Author seed={id} /> }
         }
         Route::Authors => {
             html! { <AuthorList /> }
@@ -150,5 +149,5 @@ fn switch(routes: &Route) -> Html {
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
-    yew::start_app::<Model>();
+    yew::Renderer::<App>::new().render();
 }
